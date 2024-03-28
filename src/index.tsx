@@ -16,7 +16,12 @@ export default function Command() {
     }
   };
   function getListItemTitle(t: Ticker) {
-    return `${t.symbol} ${t.name} ${quickQuote && quickQuote.symbol == t.symbol && quickQuote.symbol == t.symbol ? quickQuote?.regularMarketPrice : ""}`;
+    let title = `${t.symbol} ${t.name}`;
+    if (t.symbol === quickQuote?.symbol) {
+      title += ` ${quickQuote ? quickQuote?.regularMarketPrice : ""}`;
+      title += ` ${quickQuote ? "(" + quickQuote.regularMarketChange?.toPrecision(3) + "%)" : ""}`;
+    }
+    return title;
   }
 
   return (
