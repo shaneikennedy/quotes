@@ -1,20 +1,38 @@
 import React, { useEffect, useState } from "react";
 import yahooFinance from "yahoo-finance2";
 import { Quote } from "yahoo-finance2/dist/esm/src/modules/quote";
-import { tickers } from "./tickers";
+import { Ticker, tickers } from "./tickers";
 
-import { ActionPanel, Form, Action, Detail, useNavigation, List } from "@raycast/api";
+import { ActionPanel, Action, Detail, List } from "@raycast/api";
 
 export default function Command() {
+  const [quickQuote, setQuickQuote] = useState<Quote | null>();
+  const handleNewSelection = async (symbol: string | null) => {
+    if (symbol === null) {
+      return;
+    } else if (tickers.findIndex((ticker) => ticker.symbol === symbol) >= 0) {
+      const q = await yahooFinance.quote(symbol);
+      setQuickQuote(q);
+    }
+  };
+  function getListItemTitle(t: Ticker) {
+    return `${t.symbol} ${t.name} ${quickQuote && quickQuote.symbol == t.symbol && quickQuote.symbol == t.symbol ? quickQuote?.regularMarketPrice : ""}`;
+  }
+
   return (
-    <List navigationTitle="Search for quotes" searchBarPlaceholder="Search for quotes">
-      {tickers.map((t) => (
+    <List
+      onSelectionChange={handleNewSelection}
+      navigationTitle="Search for quotes"
+      searchBarPlaceholder="Search for quotes"
+    >
+      {tickers.map((t: Ticker, index) => (
         <List.Item
-          key={t.symbol}
-          title={`${t.symbol} ${t.name}`}
+          id={t.symbol}
+          key={index}
+          title={getListItemTitle(t)}
           actions={
-            <ActionPanel title="#1 in raycast/extensions">
-              <Action.Push title="Get Quote" target={<QuoteView symbol={t.symbol} />} />
+            <ActionPanel title="Quote menu">
+              <Action.Push icon={"📈"} title="Get Quote" target={<QuoteView symbol={t.symbol} />} />
               <Action.OpenInBrowser
                 title="See on finance.yahoo.com"
                 url={`https://finance.yahoo.com/quote/${t.symbol}`}
@@ -24,25 +42,6 @@ export default function Command() {
         />
       ))}
     </List>
-  );
-}
-
-export function QuoteForm() {
-  const { push } = useNavigation();
-  const [symbol, setSymbol] = useState("NVDA");
-
-  return (
-    <>
-      <Form
-        actions={
-          <ActionPanel>
-            <Action.SubmitForm title="Get Quote" onSubmit={() => push(<QuoteView symbol={symbol} />)} />
-          </ActionPanel>
-        }
-      >
-        <Form.TextField id="symbol" value={symbol} onChange={setSymbol} />
-      </Form>
-    </>
   );
 }
 
@@ -56,7 +55,6 @@ const QuoteView: React.FC<QuoteViewProps> = ({ symbol }) => {
     async function fetchQuote() {
       const q = await yahooFinance.quote(symbol);
       if (q.symbol != quote?.symbol) {
-        console.log(q);
         setQuote(q);
       }
     }

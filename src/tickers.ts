@@ -1,9 +1,13 @@
-export const tickers = [
+export interface Ticker {
+  symbol: string;
+  name: string;
+}
+
+export const tickers: Ticker[] = [
   { symbol: "MSFT", name: "Microsoft Corporation" },
   { symbol: "AAPL", name: "Apple Inc" },
   { symbol: "NVDA", name: "NVIDIA Corporation" },
   { symbol: "GOOG", name: "Alphabet Inc." },
-  { symbol: "GOOG", name: " Alphabet Inc." },
   { symbol: "AMZN", name: " Amazon.com, Inc." },
   { symbol: "META", name: " Meta Platforms, Inc." },
   { symbol: "BRK.B", name: " Berkshire Hathaway Inc." },
