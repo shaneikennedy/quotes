@@ -19,7 +19,7 @@ export default function Command() {
     let title = `${t.symbol} ${t.name}`;
     if (t.symbol === quickQuote?.symbol) {
       title += ` ${quickQuote ? quickQuote?.regularMarketPrice : ""}`;
-      title += ` ${quickQuote ? "(" + quickQuote.regularMarketChange?.toPrecision(3) + "%)" : ""}`;
+      title += ` ${quickQuote ? "(" + quickQuote.regularMarketChangePercent?.toPrecision(3) + "%)" : ""}`;
     }
     return title;
   }
