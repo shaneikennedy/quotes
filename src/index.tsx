@@ -77,6 +77,14 @@ const QuoteView: React.FC<QuoteViewProps> = ({ symbol }) => {
         <Detail
           markdown={markdown(quote)}
           navigationTitle={`${quote.symbol}`}
+          actions={
+            <ActionPanel title="Quote menu">
+              <Action.OpenInBrowser
+                title="See on finance.yahoo.com"
+                url={`https://finance.yahoo.com/quote/${quote.symbol}`}
+              />
+            </ActionPanel>
+          }
           metadata={
             <Detail.Metadata>
               <Detail.Metadata.Label
