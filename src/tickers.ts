@@ -10,7 +10,7 @@ export const tickers: Ticker[] = [
   { symbol: "GOOG", name: "Alphabet Inc." },
   { symbol: "AMZN", name: " Amazon.com, Inc." },
   { symbol: "META", name: " Meta Platforms, Inc." },
-  { symbol: "BRK.B", name: " Berkshire Hathaway Inc." },
+  { symbol: "BRK-B", name: " Berkshire Hathaway Inc." },
   { symbol: "LLY", name: " Eli Lilly and Company" },
   { symbol: "AVGO", name: "Broadcom Inc." },
   { symbol: "V", name: " Visa Inc." },
