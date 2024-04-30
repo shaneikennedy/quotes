@@ -3,7 +3,7 @@ import yahooFinance from "yahoo-finance2";
 import { Quote } from "yahoo-finance2/dist/esm/src/modules/quote";
 import { Ticker, tickers as ticks } from "./tickers";
 
-import { ActionPanel, Action, Icon, Detail, List, Color } from "@raycast/api";
+import { ActionPanel, Action, showToast, Toast, Icon, Detail, List, Color } from "@raycast/api";
 import { addFavoriteToStorage, loadFavorites, removeFavoriteFromStorage } from "./storage";
 
 export default function Command() {
@@ -13,8 +13,17 @@ export default function Command() {
     if (symbol === null) {
       return;
     } else if (tickers.findIndex((ticker) => ticker.symbol === symbol) >= 0) {
-      const q = await yahooFinance.quote(symbol);
-      setQuickQuote(q);
+      let q: Quote;
+      try {
+        q = await yahooFinance.quote(symbol);
+        setQuickQuote(q);
+      } catch (error) {
+        showToast({
+          style: Toast.Style.Failure,
+          title: "Something went wrong",
+          message: "Trouble fetching quote data from yahoo finance.",
+        });
+      }
     }
   };
 
@@ -104,9 +113,17 @@ const QuoteView: React.FC<QuoteViewProps> = ({ ticker, addToFavorites, removeFro
   const [isFav, setIsFav] = useState<boolean>(ticker.favorited);
   useEffect(() => {
     async function fetchQuote() {
-      const q = await yahooFinance.quote(ticker.symbol);
-      if (q.symbol != quote?.symbol) {
-        setQuote(q);
+      try {
+        const q = await yahooFinance.quote(ticker.symbol);
+        if (q.symbol != quote?.symbol) {
+          setQuote(q);
+        }
+      } catch (e) {
+        showToast({
+          style: Toast.Style.Failure,
+          title: "Something went wrong",
+          message: "Trouble fetching quote data from yahoo finance.",
+        });
       }
     }
     fetchQuote();
