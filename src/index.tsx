@@ -45,13 +45,13 @@ export default function Command() {
     );
   }
 
-  async function addToFavorites(t: Ticker) {
-    await addFavoriteToStorage(t.symbol);
+  async function addToFavorites(symbol: string) {
+    await addFavoriteToStorage(symbol);
     updateTickers();
   }
 
-  async function removeFromFavorites(t: Ticker) {
-    await removeFavoriteFromStorage(t.symbol);
+  async function removeFromFavorites(symbol: string) {
+    await removeFavoriteFromStorage(symbol);
     updateTickers();
   }
 
@@ -72,29 +72,7 @@ export default function Command() {
           title={getListItemTitle(t)}
           accessories={t.favorited ? [{ icon: Icon.StarCircle }] : []}
           actions={
-            <ActionPanel title="Quote menu">
-              <Action.Push
-                icon={"📈"}
-                title="Get Quote"
-                target={
-                  <QuoteView ticker={t} addToFavorites={addToFavorites} removeFromFavorites={removeFromFavorites} />
-                }
-              />
-              <Action.OpenInBrowser
-                title="See on finance.yahoo.com"
-                url={`https://finance.yahoo.com/quote/${t.symbol}`}
-              />
-              {!t.favorited && (
-                <Action title="Save to favorites" icon={Icon.StarCircle} onAction={() => addToFavorites(t)} />
-              )}
-              {t.favorited && (
-                <Action title="Remove from favorites" icon={Icon.Star} onAction={() => removeFromFavorites(t)} />
-              )}
-              <Action.OpenInBrowser
-                title="See on finance.yahoo.com"
-                url={`https://finance.yahoo.com/quote/${t.symbol}`}
-              />
-            </ActionPanel>
+            <ListViewActions ticker={t} addToFavorites={addToFavorites} removeFromFavorites={removeFromFavorites} />
           }
         />
       ))}
@@ -102,10 +80,42 @@ export default function Command() {
   );
 }
 
+type ListViewActionsProps = {
+  addToFavorites: (symbol: string) => Promise<void>;
+  removeFromFavorites: (symbol: string) => Promise<void>;
+  ticker: Ticker;
+};
+
+const ListViewActions: React.FC<ListViewActionsProps> = ({ ticker, addToFavorites, removeFromFavorites }) => {
+  return (
+    <ActionPanel title="Quote menu">
+      <Action.Push
+        icon={"📈"}
+        title="Get Quote"
+        target={
+          <QuoteView
+            ticker={ticker}
+            addToFavorites={() => addToFavorites(ticker.symbol)}
+            removeFromFavorites={() => removeFromFavorites(ticker.symbol)}
+          />
+        }
+      />
+      <Action.OpenInBrowser title="See on finance.yahoo.com" url={`https://finance.yahoo.com/quote/${ticker.symbol}`} />
+      {!ticker.favorited && (
+        <Action title="Save to favorites" icon={Icon.StarCircle} onAction={() => addToFavorites(ticker.symbol)} />
+      )}
+      {ticker.favorited && (
+        <Action title="Remove from favorites" icon={Icon.Star} onAction={() => removeFromFavorites(ticker.symbol)} />
+      )}
+      <Action.OpenInBrowser title="See on finance.yahoo.com" url={`https://finance.yahoo.com/quote/${ticker.symbol}`} />
+    </ActionPanel>
+  );
+};
+
 type QuoteViewProps = {
   ticker: Ticker;
-  addToFavorites: (t: Ticker) => Promise<void>;
-  removeFromFavorites: (t: Ticker) => Promise<void>;
+  addToFavorites: (symbol: string) => Promise<void>;
+  removeFromFavorites: (symbol: string) => Promise<void>;
 };
 
 const QuoteView: React.FC<QuoteViewProps> = ({ ticker, addToFavorites, removeFromFavorites }) => {
@@ -141,59 +151,89 @@ const QuoteView: React.FC<QuoteViewProps> = ({ ticker, addToFavorites, removeFro
           markdown={markdown(quote)}
           navigationTitle={`${quote.symbol}`}
           actions={
-            <ActionPanel title="Quote menu">
-              <Action.OpenInBrowser
-                title="See on finance.yahoo.com"
-                url={`https://finance.yahoo.com/quote/${quote.symbol}`}
-              />
-              {!isFav && (
-                <Action
-                  title="Save to favorites"
-                  icon={Icon.StarCircle}
-                  onAction={() => {
-                    addToFavorites(ticker);
-                    setIsFav(true);
-                  }}
-                />
-              )}
-              {isFav && (
-                <Action
-                  title="Remove from favorites"
-                  icon={Icon.Star}
-                  onAction={() => {
-                    removeFromFavorites(ticker);
-                    setIsFav(false);
-                  }}
-                />
-              )}
-            </ActionPanel>
+            <QuoteViewActions
+              quote={quote}
+              isFav={isFav}
+              setIsFav={setIsFav}
+              addToFavorites={addToFavorites}
+              removeFromFavorites={removeFromFavorites}
+            />
           }
-          metadata={
-            <Detail.Metadata>
-              <Detail.Metadata.Label
-                title="Today's change"
-                text={{
-                  value: `${quote.regularMarketChangePercent?.toPrecision(4)}%`,
-                  color: quote.regularMarketChangePercent! > 0 ? Color.Green : Color.Red,
-                }}
-              />
-              {isFav && <Detail.Metadata.Label title="In your favorites" text={"⭐"} />}
-              <Detail.Metadata.Label title="Market cap" text={`$${quote.marketCap?.toLocaleString("en-US")}`} />
-              <Detail.Metadata.Label title="Previous close" text={`${quote.regularMarketPreviousClose}`} />
-              <Detail.Metadata.Label title="Open" text={`${quote.regularMarketOpen}`} />
-              <Detail.Metadata.Label title="Earnings date" text={`${quote.earningsTimestamp?.toLocaleDateString()}`} />
-              <Detail.Metadata.Separator />
-              <Detail.Metadata.Link
-                text={`${quote.symbol}`}
-                target={`https://finance.yahoo.com/quote/${quote.symbol}`}
-                title="Open in yahoo finance"
-              />
-            </Detail.Metadata>
-          }
+          metadata={<QuoteViewMetadata quote={quote} isFav={isFav} />}
         />
       ) : (
         <Detail markdown="Fetching quote..." />
       )}
     </>
+  );
+};
+
+type QuoteViewActionsProps = {
+  quote: Quote;
+  isFav: boolean;
+  setIsFav: React.Dispatch<React.SetStateAction<boolean>>;
+  addToFavorites: (symbol: string) => Promise<void>;
+  removeFromFavorites: (symbol: string) => Promise<void>;
+};
+const QuoteViewActions: React.FC<QuoteViewActionsProps> = ({
+  quote,
+  isFav,
+  setIsFav,
+  addToFavorites,
+  removeFromFavorites,
+}) => {
+  return (
+    <ActionPanel title="Quote menu">
+      <Action.OpenInBrowser title="See on finance.yahoo.com" url={`https://finance.yahoo.com/quote/${quote.symbol}`} />
+      {!isFav && (
+        <Action
+          title="Save to favorites"
+          icon={Icon.StarCircle}
+          onAction={() => {
+            addToFavorites(quote.symbol);
+            setIsFav(true);
+          }}
+        />
+      )}
+      {isFav && (
+        <Action
+          title="Remove from favorites"
+          icon={Icon.Star}
+          onAction={() => {
+            removeFromFavorites(quote.symbol);
+            setIsFav(false);
+          }}
+        />
+      )}
+    </ActionPanel>
+  );
+};
+
+type QuoteViewMetadateProps = {
+  quote: Quote;
+  isFav: boolean;
+};
+const QuoteViewMetadata: React.FC<QuoteViewMetadateProps> = ({ quote, isFav }) => {
+  return (
+    <Detail.Metadata>
+      <Detail.Metadata.Label
+        title="Today's change"
+        text={{
+          value: `${quote.regularMarketChangePercent?.toPrecision(4)}%`,
+          color: quote.regularMarketChangePercent! > 0 ? Color.Green : Color.Red,
+        }}
+      />
+      {isFav && <Detail.Metadata.Label title="In your favorites" text={"⭐"} />}
+      <Detail.Metadata.Label title="Market cap" text={`$${quote.marketCap?.toLocaleString("en-US")}`} />
+      <Detail.Metadata.Label title="Previous close" text={`${quote.regularMarketPreviousClose}`} />
+      <Detail.Metadata.Label title="Open" text={`${quote.regularMarketOpen}`} />
+      <Detail.Metadata.Label title="Earnings date" text={`${quote.earningsTimestamp?.toLocaleDateString()}`} />
+      <Detail.Metadata.Separator />
+      <Detail.Metadata.Link
+        text={`${quote.symbol}`}
+        target={`https://finance.yahoo.com/quote/${quote.symbol}`}
+        title="Open in yahoo finance"
+      />
+    </Detail.Metadata>
   );
 };
